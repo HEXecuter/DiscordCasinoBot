@@ -9,6 +9,6 @@ TOKEN: str = getenv("DISCORD_TOKEN")
 DEBUG_ENABLED: bool = getenv("CASINO_DEBUG") == "TRUE"
 INTENTS: nextcord.Intents = nextcord.Intents.default()
 
-bot = commands.Bot()
+bot: nextcord.ext.commands.bot.Bot = commands.Bot()
 
 bot.run(TOKEN)
