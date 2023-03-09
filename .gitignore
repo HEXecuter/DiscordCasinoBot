@@ -131,3 +131,7 @@ dmypy.json
 
 # MySQL
 *.mwb
+
+# Databases
+*.db
+*.sqlite*
