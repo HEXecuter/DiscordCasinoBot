@@ -1,3 +1,4 @@
+import nextcord
 from sqlalchemy import select
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -19,3 +20,10 @@ def get_multipliers(session: Session, user_id: int) -> Union[Decimal | None]:
 
 def format_money(amount: Union[Decimal | int | float]) -> str:
     return currency(amount, grouping=True)
+
+
+async def send_response(interaction: nextcord.Interaction, **kwargs):
+    if interaction.response.is_done():
+        await interaction.followup.send(**kwargs)
+    else:
+        await interaction.response.send_message(**kwargs)

@@ -6,9 +6,10 @@ from models.model import engine
 from models.model import User
 from models.model import MONEY_DEFAULT
 from sqlalchemy.orm import Session
-from utils.database import get_user
-from utils.database import format_money
-from utils.database import get_multipliers
+from utils.helpers import get_user
+from utils.helpers import format_money
+from utils.helpers import get_multipliers
+from utils.helpers import send_response
 from decimal import Decimal
 from random import randint
 
@@ -41,6 +42,7 @@ class AccountManagement(commands.Cog):
                 return
             else:
                 await self.send_error_message(interaction, 'Error Creating Account', 'Your account already exists')
+                return
 
     @staticmethod
     def create_user(session: Session, discord_id: int, guild_id: int):
@@ -62,19 +64,13 @@ class AccountManagement(commands.Cog):
             f"your account. My generosity is not free, so I have also kidnapped your pet, {pet_name}. I do " \
             f"charge interest, so you will have to pay me back {format_money(PET_PRICE)}. Hurry before someone " \
             f"else buys {pet_name} from me!\n```"
-        if interaction.response.is_done():
-            await interaction.followup.send(embed=response)
-        else:
-            await interaction.response.send_message(embed=response)
+        await send_response(interaction, embed=response)
 
     @staticmethod
     async def send_error_message(interaction: nextcord.Interaction, error_title: str, error_message: str):
         response = nextcord.Embed(title=error_title, color=0xf50202)
         response.description = f'```{error_message}\n```'
-        if interaction.response.is_done():
-            await interaction.followup.send(embed=response)
-        else:
-            await interaction.response.send_message(embed=response)
+        await send_response(interaction, embed=response)
 
     @nextcord.slash_command()
     async def view_account(self, interaction: nextcord.Interaction, member: nextcord.Member):
@@ -115,7 +111,4 @@ class AccountManagement(commands.Cog):
             total_multipliers: Decimal = get_multipliers(Session.object_session(user), user.id)
             response.add_field(name=f"Paycheck Multiplier", value=f"```\n{total_multipliers:.0%}\n```", inline=True)
 
-        if interaction.response.is_done():
-            await interaction.followup.send(embed=response)
-        else:
-            await interaction.response.send_message(embed=response)
+        await send_response(interaction, embed=response)
