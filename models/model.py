@@ -9,10 +9,11 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import DECIMAL
 from sqlalchemy import DATE
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, Session
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
+import os
 
 MONEY_DEFAULT: str = '1000'
 
@@ -81,7 +82,7 @@ class Multipliers(Base):
                f'\tindustry_index: {self.industry_index}\n'
 
 
-engine = create_engine('sqlite:///casino.db')
+engine = create_engine('sqlite:///' + os.path.abspath(os.path.join(os.getcwd(), 'casino.sqlite3')))
 Base.metadata.create_all(engine)
 
 
