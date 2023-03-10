@@ -8,6 +8,7 @@ from models.model import MONEY_DEFAULT
 from sqlalchemy.orm import Session
 from utils.database import get_user
 from utils.database import format_money
+from utils.database import get_multipliers
 from decimal import Decimal
 from random import randint
 
@@ -32,13 +33,14 @@ class AccountManagement(commands.Cog):
         """
         with Session(engine) as session:
             user: Union[User | None] = get_user(session, interaction.user.id, interaction.guild.id)
-            if user is None:
+            user_not_exist: bool = user is None
+            if user_not_exist:
                 self.create_user(session, interaction.user.id, interaction.guild.id)
                 await self.send_welcome_message(interaction, pet_name)
                 session.commit()
                 return
             else:
-                await self.send_error_message(interaction, 'Error creating account', 'Your account already exists')
+                await self.send_error_message(interaction, 'Error Creating Account', 'Your account already exists')
 
     @staticmethod
     def create_user(session: Session, discord_id: int, guild_id: int):
@@ -69,6 +71,50 @@ class AccountManagement(commands.Cog):
     async def send_error_message(interaction: nextcord.Interaction, error_title: str, error_message: str):
         response = nextcord.Embed(title=error_title, color=0xf50202)
         response.description = f'```{error_message}\n```'
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=response)
+        else:
+            await interaction.response.send_message(embed=response)
+
+    @nextcord.slash_command()
+    async def view_account(self, interaction: nextcord.Interaction, member: nextcord.Member):
+        """Use this command to get information on someone's account
+
+        Parameters
+        _____________
+        user:
+            User's account you want to see
+        """
+        with Session(engine) as session:
+            user: Union[User | None] = get_user(session, member.id, member.guild.id)
+            user_exists = user is not None
+            if user_exists:
+                await self.send_account_info(interaction, user, member.display_name)
+            else:
+                await self.send_error_message(interaction, 'Error Querying Account',
+                                              f'{member.display_name} has not created an account yet.')
+
+    @staticmethod
+    async def send_account_info(interaction: nextcord.Interaction, user: User, display_name: str):
+        has_job: bool = user.job is not None
+        has_multipliers: bool = len(user.multipliers) > 0
+
+        response = nextcord.Embed(title=f"{display_name} Account Info", color=0x00e1ff)
+        # TODO: Add fields for pet info
+        # response.add_field(name=f"{target_obj.pet_name} Status", value=f"```\n{target_obj.pet_status}\n```",
+        #                    inline=True)
+        # response.add_field(name=f"{target_obj.pet_name} Owner", value=f"<@{target_obj.pet_owner}>", inline=True)
+        if has_job:
+            response.add_field(name=f"Job Title", value=f"```\n{user.job.title}\n```", inline=False)
+            response.add_field(name=f"Company Name", value=f"```\n{user.job.company}\n```", inline=False)
+        else:
+            response.add_field(name=f"Job Title", value=f"```\nUnemployed\n```", inline=False)
+            response.add_field(name=f"Company Name", value=f"```\nUnemployed\n```", inline=False)
+        response.add_field(name=f"Account Balance", value=f"```\n{format_money(user.money)}\n```", inline=True)
+        if has_multipliers:
+            total_multipliers: Decimal = get_multipliers(Session.object_session(user), user.id)
+            response.add_field(name=f"Paycheck Multiplier", value=f"```\n{total_multipliers:.0%}\n```", inline=True)
+
         if interaction.response.is_done():
             await interaction.followup.send(embed=response)
         else:
