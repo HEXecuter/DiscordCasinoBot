@@ -6,15 +6,16 @@ from models.model import engine
 from models.model import User
 from models.model import Pet
 from models.model import MONEY_DEFAULT
+from models.model import PET_PRICE_DEFAULT
 from sqlalchemy.orm import Session
 from utils.helpers import get_user
 from utils.helpers import format_money
 from utils.helpers import get_multipliers
 from utils.helpers import send_response
+from utils.helpers import send_error_message
 from decimal import Decimal
 from random import randint
 
-PET_PRICE = Decimal('100000')
 
 
 class AccountManagement(commands.Cog):
@@ -42,7 +43,7 @@ class AccountManagement(commands.Cog):
                 session.commit()
                 return
             else:
-                await self.send_error_message(interaction, 'Error Creating Account', 'Your account already exists')
+                await send_error_message(interaction, 'Error Creating Account', 'Your account already exists')
                 return
 
     @staticmethod
@@ -65,14 +66,8 @@ class AccountManagement(commands.Cog):
             f"```Hello {interaction.user.display_name},\n" \
             f"Since you do not have any money, I have deposited {format_money(Decimal(MONEY_DEFAULT))} into " \
             f"your account. My generosity is not free, so I have also kidnapped your pet, {pet_name}. I do " \
-            f"charge interest, so you will have to pay me back {format_money(PET_PRICE)}. Hurry before someone " \
+            f"charge interest, so you will have to pay me back {format_money(PET_PRICE_DEFAULT)}. Hurry before someone " \
             f"else buys {pet_name} from me!\n```"
-        await send_response(interaction, embed=response)
-
-    @staticmethod
-    async def send_error_message(interaction: nextcord.Interaction, error_title: str, error_message: str):
-        response = nextcord.Embed(title=error_title, color=0xf50202)
-        response.description = f'```{error_message}\n```'
         await send_response(interaction, embed=response)
 
     @nextcord.slash_command()
@@ -90,8 +85,8 @@ class AccountManagement(commands.Cog):
             if user_exists:
                 await self.send_account_info(interaction, user, member.display_name)
             else:
-                await self.send_error_message(interaction, 'Error Querying Account',
-                                              f'{member.display_name} has not created an account yet.')
+                await send_error_message(interaction, 'Error Querying Account',
+                                         f'{member.display_name} has not created an account yet.')
 
     @staticmethod
     async def send_account_info(interaction: nextcord.Interaction, user: User, display_name: str):
@@ -99,8 +94,8 @@ class AccountManagement(commands.Cog):
         has_multipliers: bool = len(user.multipliers) > 0
 
         response = nextcord.Embed(title=f"{display_name} Account Info", color=0x00e1ff)
-        response.add_field(name=f"Pet Name", value=f"```\n{user.pet.name}\n```", inline=True)
 
+        response.add_field(name=f"Pet Name", value=f"```\n{user.pet.name}\n```", inline=True)
         if user.pet.current_owner is None:
             pet_status = '```\nKidnapped by Bot\n```'
         elif user.pet.current_owner is user:

@@ -5,6 +5,7 @@ from os import getenv
 import nextcord
 from nextcord.ext import commands
 from cogs.account import AccountManagement
+from cogs.employment import Employment
 
 
 load_dotenv()
@@ -17,4 +18,5 @@ setlocale(LC_ALL, LOCALE)
 
 bot: nextcord.ext.commands.bot.Bot = commands.Bot()
 bot.add_cog(AccountManagement(bot))
+bot.add_cog(Employment(bot))
 bot.run(TOKEN)
