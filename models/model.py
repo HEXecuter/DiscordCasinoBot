@@ -16,6 +16,7 @@ from sqlalchemy.orm import relationship
 import os
 
 MONEY_DEFAULT: str = '1000'
+PET_PRICE_DEFAULT: str = '100000'
 
 
 class Base(DeclarativeBase):
@@ -29,6 +30,7 @@ class User(Base):
     guild_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     money: Mapped[DECIMAL] = mapped_column(DECIMAL(precision=2), nullable=False, server_default=MONEY_DEFAULT)
     job: Mapped['Job'] = relationship(back_populates='user')
+    pet: Mapped['Pet'] = relationship(back_populates='user', foreign_keys='Pet.user_id')
     multipliers: Mapped[List['Multipliers']] = relationship(back_populates='user')
 
     def __str__(self):
@@ -82,9 +84,29 @@ class Multipliers(Base):
                f'\tindustry_index: {self.industry_index}\n'
 
 
+class Pet(Base):
+    __tablename__ = 'pets'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
+    user: Mapped['User'] = relationship(back_populates='pet', foreign_keys=user_id)
+    # Null current_owner means the pet is owned by the discord bot and not another user
+    current_owner_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'), nullable=True)
+    current_owner: Mapped['User'] = relationship(back_populates='pet', foreign_keys=current_owner_id)
+    name: Mapped[str] = mapped_column(String(32, collation='NOCASE'), nullable=False)
+    purchase_price: Mapped[DECIMAL] = mapped_column(DECIMAL(precision=2), nullable=False,
+                                                    server_default=PET_PRICE_DEFAULT)
+
+    def __str__(self):
+        return f'Pet:\n' \
+               f'\tid: {self.id}\n' \
+               f'\tuser_id: {self.user_id}\n' \
+               f'\tcurrent_owner_id: {self.current_owner_id}\n' \
+               f'\tname: {self.name}\n' \
+               f'\tpurchase_price: {self.purchase_price}\n'
+
+
 engine = create_engine('sqlite:///' + os.path.abspath(os.path.join(os.getcwd(), 'casino.sqlite3')))
 Base.metadata.create_all(engine)
-
 
 if __name__ == '__main__':
     setlocale(LC_ALL, 'en_US')

@@ -1,5 +1,4 @@
 from locale import setlocale
-from locale import currency
 from locale import LC_ALL
 from dotenv import load_dotenv
 from os import getenv

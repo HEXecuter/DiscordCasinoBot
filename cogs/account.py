@@ -4,6 +4,7 @@ import nextcord
 from nextcord.ext import commands
 from models.model import engine
 from models.model import User
+from models.model import Pet
 from models.model import MONEY_DEFAULT
 from sqlalchemy.orm import Session
 from utils.helpers import get_user
@@ -36,7 +37,7 @@ class AccountManagement(commands.Cog):
             user: Union[User | None] = get_user(session, interaction.user.id, interaction.guild.id)
             user_not_exist: bool = user is None
             if user_not_exist:
-                self.create_user(session, interaction.user.id, interaction.guild.id)
+                self.create_user(session, interaction.user.id, interaction.guild.id, pet_name)
                 await self.send_welcome_message(interaction, pet_name)
                 session.commit()
                 return
@@ -45,8 +46,10 @@ class AccountManagement(commands.Cog):
                 return
 
     @staticmethod
-    def create_user(session: Session, discord_id: int, guild_id: int):
-        session.add(User(discord_id=discord_id, guild_id=guild_id))
+    def create_user(session: Session, discord_id: int, guild_id: int, pet_name):
+        new_user: User = User(discord_id=discord_id, guild_id=guild_id)
+        new_user.pet = Pet(current_owner_id=None, name=pet_name)
+        session.add(new_user)
 
     @staticmethod
     async def send_welcome_message(interaction: nextcord.Interaction, pet_name: str):
@@ -96,10 +99,16 @@ class AccountManagement(commands.Cog):
         has_multipliers: bool = len(user.multipliers) > 0
 
         response = nextcord.Embed(title=f"{display_name} Account Info", color=0x00e1ff)
-        # TODO: Add fields for pet info
-        # response.add_field(name=f"{target_obj.pet_name} Status", value=f"```\n{target_obj.pet_status}\n```",
-        #                    inline=True)
-        # response.add_field(name=f"{target_obj.pet_name} Owner", value=f"<@{target_obj.pet_owner}>", inline=True)
+        response.add_field(name=f"Pet Name", value=f"```\n{user.pet.name}\n```", inline=True)
+
+        if user.pet.current_owner is None:
+            pet_status = '```\nKidnapped by Bot\n```'
+        elif user.pet.current_owner is user:
+            pet_status = '```\nSafe\n```'
+        else:
+            pet_status = f'Kidnapped by @<{user.pet.current_owner.discord_id}>'
+        response.add_field(name=f"Pet Status", value=pet_status, inline=True)
+
         if has_job:
             response.add_field(name=f"Job Title", value=f"```\n{user.job.title}\n```", inline=False)
             response.add_field(name=f"Company Name", value=f"```\n{user.job.company}\n```", inline=False)
@@ -107,6 +116,7 @@ class AccountManagement(commands.Cog):
             response.add_field(name=f"Job Title", value=f"```\nUnemployed\n```", inline=False)
             response.add_field(name=f"Company Name", value=f"```\nUnemployed\n```", inline=False)
         response.add_field(name=f"Account Balance", value=f"```\n{format_money(user.money)}\n```", inline=True)
+
         if has_multipliers:
             total_multipliers: Decimal = get_multipliers(Session.object_session(user), user.id)
             response.add_field(name=f"Paycheck Multiplier", value=f"```\n{total_multipliers:.0%}\n```", inline=True)
