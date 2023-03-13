@@ -13,10 +13,15 @@ def get_user(session: Session, discord_id: int, guild_id: int) -> Union[None | U
     return session.execute(select(User).filter_by(discord_id=discord_id, guild_id=guild_id)).scalar()
 
 
-def get_multipliers(session: Session, user_id: int) -> Union[Decimal | None]:
-    return session.execute(select(func.sum(Multipliers.stat_multiplier))
-                           .where(Multipliers.user_id == user_id)
-                           .group_by('user_id')).scalar() + Decimal('1.0')
+def get_multipliers(user: User) -> Union[Decimal]:
+    multipliers_sum: Union[Decimal | None] = Session.object_session(user).execute(
+        select(func.sum(Multipliers.stat_multiplier))
+        .where(Multipliers.user_id == user.id)
+        .group_by('user_id')).scalar()
+    if multipliers_sum is None:
+        return Decimal('1.0')
+    else:
+        return multipliers_sum + Decimal('1.0')
 
 
 def format_money(amount: Union[Decimal | int | float]) -> str:

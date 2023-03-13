@@ -3,12 +3,14 @@ from typing import Union
 from nextcord.ext import commands
 from models.model import User
 from models.model import Job
+from models.model import Multipliers
 from models.model import engine
 from sqlalchemy.orm import Session
 from utils.helpers import get_user
 from utils.helpers import send_error_message
 from utils.helpers import send_response
-from datetime import date
+from utils.helpers import format_money
+from utils.helpers import get_multipliers
 from decimal import Decimal
 
 
@@ -34,7 +36,7 @@ class Employment(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @nextcord.slash_command(guild_ids=[868296265564319774])
+    @nextcord.slash_command()
     async def apply_for_job(self, interaction: nextcord.Interaction,
                             job_title: str = nextcord.SlashOption(min_length=5, max_length=32),
                             company_name: str = nextcord.SlashOption(min_length=5, max_length=32)):
@@ -73,9 +75,74 @@ class Employment(commands.Cog):
         response = nextcord.Embed(title="Congratulations on the New Job!", color=0x00e1ff)
         response.description = f"```\nCongratulations {interaction.user.display_name},\n" \
                                f"The hiring manager got confused and hired the wrong person! " \
-                               f"Thanks to their mistake, you are now the {user.job.title} at {user.job.company}. Don't " \
-                               f"forget to get your paycheck! You can also \"study hard\" and pay " \
+                               f"Thanks to their mistake, you are now the {user.job.title} at {user.job.company}. " \
+                               f"Don't forget to get your paycheck! You can also \"study hard\" and pay " \
                                f"for certifications and degrees that increase your salary.\n```"
         response.add_field(name=f"Job Title", value=f"```\n{user.job.title}\n```", inline=False)
         response.add_field(name=f"Company Name", value=f"```\n{user.job.company}\n```", inline=False)
+        await send_response(interaction, embed=response)
+
+    @nextcord.slash_command()
+    async def purchase_degree(self, interaction: nextcord.Interaction,
+                              degree_type: str = nextcord.SlashOption(choices=degrees.keys()),
+                              field: str = nextcord.SlashOption(min_length=5, max_length=32),
+                              amount: int = nextcord.SlashOption(min_value=1, max_value=100)):
+        """Use this command to ✨bribe✨ a school official into giving you a degree
+
+        Parameters
+        _____________
+        degree_type:
+            Choose from the list of options, more expensive degrees provide better returns
+        field:
+            The field you want to major in Ex: Twitter Argument De-escalation
+        amount:
+            The amount of degrees you want to purchase
+        """
+        with Session(engine) as session:
+            user: Union[User | None] = get_user(session, interaction.user.id, interaction.guild.id)
+            total_cost: Decimal = Employment.degrees[degree_type]['price'] * amount
+            total_multiplier: Decimal = Employment.degrees[degree_type]['stat'] * amount
+            degree_name: str = Employment.degrees[degree_type]['friendly_name'] + ("s" if amount > 1 else '')
+
+            user_not_exist: bool = user is None
+            if user_not_exist:
+                await send_error_message(interaction, 'Error Purchasing Degree',
+                                         'You can not purchase a degree before creating an account')
+                return
+
+            insufficient_funds: bool = user.money < total_cost
+            if insufficient_funds:
+                await send_error_message(interaction, 'Error Purchasing Degree',
+                                         f'You are too broke to buy {amount} {degree_name} in {field}. '
+                                         f'Come back when you have {format_money(total_cost)}.')
+                return
+            else:
+                self.charge_user(user, total_cost)
+                self.create_multiplier(user, total_multiplier, amount, degree_type, field)
+                await self.send_degree_purchase_response(interaction, user, amount, total_cost, degree_name, field)
+                session.commit()
+
+    @staticmethod
+    def create_multiplier(user: User, multiplier: Decimal, amount: int, degree_type: str, field: str):
+        user.multipliers.append(
+            Multipliers(stat_multiplier=multiplier, amount_owned=amount, degree_type=degree_type, field=field))
+
+    @staticmethod
+    def charge_user(user: User, cost: Decimal):
+        user.money -= cost
+
+    @staticmethod
+    async def send_degree_purchase_response(interaction: nextcord.Interaction,
+                                            user: User,
+                                            amount: int,
+                                            cost: Decimal,
+                                            degree_type: str,
+                                            field: str):
+        response = nextcord.Embed(title="New Degree Purchased!", color=0x00e1ff)
+        response.description = f"Congratulations on all the hard work it took to get " \
+                               f"{amount} {degree_type} in {field}! Your paycheck has now gone up!"
+        response.add_field(name=f"Total Cost", value=f"```\n{format_money(cost)}\n```", inline=True)
+        response.add_field(name=f"Total Paycheck Multiplier", value=f"```\n{get_multipliers(user):.0%}\n```",
+                           inline=True)
+        response.add_field(name=f"Account Balance", value=f"```\n{format_money(user.money)}\n```", inline=False)
         await send_response(interaction, embed=response)

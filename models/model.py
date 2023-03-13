@@ -72,16 +72,16 @@ class Multipliers(Base):
     user: Mapped['User'] = relationship(back_populates='multipliers')
     stat_multiplier: Mapped[DECIMAL] = mapped_column(DECIMAL(2), nullable=False)
     amount_owned: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    degree_type_index: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    industry_index: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    degree_type: Mapped[str] = mapped_column(String(32, collation='NOCASE'), nullable=False)
+    field: Mapped[str] = mapped_column(String(32, collation='NOCASE'), nullable=False)
 
     def __str__(self):
         return f'Multiplier:\n' \
                f'\tuser_id: {self.user_id}\n' \
                f'\tstat_multiplier: {self.stat_multiplier:.0%}\n' \
                f'\tamount_owned: {self.amount_owned}\n' \
-               f'\tdegree_type_index: {self.degree_type_index}\n' \
-               f'\tindustry_index: {self.industry_index}\n'
+               f'\tdegree_type_index: {self.degree_type}\n' \
+               f'\tindustry_index: {self.field}\n'
 
 
 class Pet(Base):

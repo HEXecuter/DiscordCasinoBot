@@ -66,8 +66,8 @@ class AccountManagement(commands.Cog):
             f"```Hello {interaction.user.display_name},\n" \
             f"Since you do not have any money, I have deposited {format_money(Decimal(MONEY_DEFAULT))} into " \
             f"your account. My generosity is not free, so I have also kidnapped your pet, {pet_name}. I do " \
-            f"charge interest, so you will have to pay me back {format_money(PET_PRICE_DEFAULT)}. Hurry before someone " \
-            f"else buys {pet_name} from me!\n```"
+            f"charge interest, so you will have to pay me back {format_money(Decimal(PET_PRICE_DEFAULT))}. " \
+            f"Hurry before someone else buys {pet_name} from me!\n```"
         await send_response(interaction, embed=response)
 
     @nextcord.slash_command()
@@ -112,8 +112,8 @@ class AccountManagement(commands.Cog):
             response.add_field(name=f"Company Name", value=f"```\nUnemployed\n```", inline=False)
         response.add_field(name=f"Account Balance", value=f"```\n{format_money(user.money)}\n```", inline=True)
 
-        if has_multipliers:
-            total_multipliers: Decimal = get_multipliers(Session.object_session(user), user.id)
-            response.add_field(name=f"Paycheck Multiplier", value=f"```\n{total_multipliers:.0%}\n```", inline=True)
+
+        total_multipliers: Decimal = get_multipliers(user)
+        response.add_field(name=f"Paycheck Multiplier", value=f"```\n{total_multipliers:.0%}\n```", inline=True)
 
         await send_response(interaction, embed=response)
