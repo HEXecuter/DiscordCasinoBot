@@ -1,4 +1,5 @@
 from decimal import Decimal
+import json
 
 
 class Roulette:
@@ -48,3 +49,30 @@ class Roulette:
         if table_tile not in self.inside_bets['straight up']['picks']:
             self.inside_bets['straight up']['picks'][table_tile] = {'amount': Decimal('0.00')}
         self.inside_bets['straight up']['picks'][table_tile]['amount'] += amount
+
+    def serialize_to_json(self):
+        state: dict = dict()
+        state['inside_bets'] = self.inside_bets
+        state['outside_bets'] = self.outside_bets
+        return json.dumps(state, default=str)
+
+    def deserialize_from_json(self, state: str):
+        state: dict = json.loads(state)
+
+        for outside_bet in state['outside_bets']:
+            state['outside_bets'][outside_bet]['payout'] = Decimal(state['outside_bets'][outside_bet]['payout'])
+            state['outside_bets'][outside_bet]['amount'] = Decimal(state['outside_bets'][outside_bet]['amount'])
+
+        state['inside_bets']['straight up']['payout'] = Decimal(state['inside_bets']['straight up']['payout'])
+        for tile in state['inside_bets']['straight up']['picks']:
+            state['inside_bets']['straight up']['picks'][tile]['amount'] = Decimal(
+                state['inside_bets']['straight up']['picks'][tile]['amount'])
+
+        self.outside_bets = state['outside_bets']
+        self.inside_bets = state['inside_bets']
+
+        return self
+
+    @classmethod
+    def from_json(cls, state: str):
+        return Roulette().deserialize_from_json(state)
