@@ -12,11 +12,11 @@ class Roulette:
         self.outside_mappings = {
             'even': self.is_even,
             'odd': self.is_odd,
-            'first twelve': self.is_first_dozen,
-            'second twelve': self.is_second_dozen,
-            'third twelve': self.is_third_dozen,
-            'first 18': self.is_first_eighteen,
-            'second 18': self.is_second_eighteen,
+            'first dozen': self.is_first_dozen,
+            'second dozen': self.is_second_dozen,
+            'third dozen': self.is_third_dozen,
+            'low': self.is_low,
+            'high': self.is_high,
         }
 
         self.outside_bets = {
@@ -26,19 +26,19 @@ class Roulette:
             'odd':
                 {'amount': Decimal('0.00'),
                  'payout': Decimal('1.00')},
-            'first twelve':
+            'first dozen':
                 {'amount': Decimal('0.00'),
                  'payout': Decimal('2.00')},
-            'second twelve':
+            'second dozen':
                 {'amount': Decimal('0.00'),
                  'payout': Decimal('2.00')},
-            'third twelve':
+            'third dozen':
                 {'amount': Decimal('0.00'),
                  'payout': Decimal('2.00')},
-            'first 18':
+            'low':
                 {'amount': Decimal('0.00'),
                  'payout': Decimal('1.00')},
-            'second 18':
+            'high':
                 {'amount': Decimal('0.00'),
                  'payout': Decimal('1.00')}
         }
@@ -111,7 +111,7 @@ class Roulette:
             if self.outside_mappings[outer_group](tile_picked) and self.outside_bets[outer_group]['amount'] > Decimal(
                     '0.00'):
                 self.payout += self.outside_bets[outer_group]['amount'] * (
-                            Decimal('1.00') + self.outside_bets[outer_group]['payout'])
+                        Decimal('1.00') + self.outside_bets[outer_group]['payout'])
                 print(f'hit on {outer_group=} for {tile_picked}')
                 print(self.payout)
 
@@ -165,7 +165,7 @@ class Roulette:
         return False
 
     @staticmethod
-    def is_first_eighteen(tile: str) -> bool:
+    def is_low(tile: str) -> bool:
         if tile == '0':
             return False
         num = int(tile)
@@ -174,7 +174,7 @@ class Roulette:
         return False
 
     @staticmethod
-    def is_second_eighteen(tile: str) -> bool:
+    def is_high(tile: str) -> bool:
         if tile == '0':
             return False
         num = int(tile)
