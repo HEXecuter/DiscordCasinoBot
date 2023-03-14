@@ -17,7 +17,6 @@ from decimal import Decimal
 from random import randint
 
 
-
 class AccountManagement(commands.Cog):
 
     def __init__(self, bot):
@@ -91,7 +90,6 @@ class AccountManagement(commands.Cog):
     @staticmethod
     async def send_account_info(interaction: nextcord.Interaction, user: User, display_name: str):
         has_job: bool = user.job is not None
-        has_multipliers: bool = len(user.multipliers) > 0
 
         response = nextcord.Embed(title=f"{display_name} Account Info", color=0x00e1ff)
 
@@ -111,7 +109,6 @@ class AccountManagement(commands.Cog):
             response.add_field(name=f"Job Title", value=f"```\nUnemployed\n```", inline=False)
             response.add_field(name=f"Company Name", value=f"```\nUnemployed\n```", inline=False)
         response.add_field(name=f"Account Balance", value=f"```\n{format_money(user.money)}\n```", inline=True)
-
 
         total_multipliers: Decimal = get_multipliers(user)
         response.add_field(name=f"Paycheck Multiplier", value=f"```\n{total_multipliers:.0%}\n```", inline=True)
