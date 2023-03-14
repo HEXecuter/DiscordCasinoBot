@@ -32,6 +32,7 @@ class User(Base):
     job: Mapped['Job'] = relationship(back_populates='user')
     pet: Mapped['Pet'] = relationship(back_populates='user', foreign_keys='Pet.user_id')
     multipliers: Mapped[List['Multipliers']] = relationship(back_populates='user')
+    games: Mapped[List['Games']] = relationship(back_populates='user')
 
     def __str__(self):
         return_string = f'User Object:\n' \
@@ -104,6 +105,22 @@ class Pet(Base):
                f'\tcurrent_owner_id: {self.current_owner_id}\n' \
                f'\tname: {self.name}\n' \
                f'\tpurchase_price: {self.purchase_price}\n'
+
+
+class Games(Base):
+    __tablename__ = 'games'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
+    user: Mapped['User'] = relationship(back_populates='games')
+    game_type: Mapped[str] = mapped_column(String(collation='NOCASE'), nullable=False)
+    game_state: Mapped[str] = mapped_column(String(), nullable=False)
+
+    def __str__(self):
+        return f'Games:\n' \
+               f'\tid: {self.id}\n' \
+               f'\tuser_id: {self.user_id}\n' \
+               f'\tgame_type: {self.game_type}\n' \
+               f'\tgame_state: {self.game_state}\n'
 
 
 engine = create_engine('sqlite:///' + os.path.abspath(os.path.join(os.getcwd(), 'casino.sqlite3')))
