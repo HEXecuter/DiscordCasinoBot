@@ -37,16 +37,16 @@ def format_timedelta(time: timedelta) -> str:
     remaining_seconds: int = int(time.total_seconds())
     if remaining_seconds >= seconds_in_hour:
         remaining_hours = remaining_seconds // seconds_in_hour
-        time_list.append(f'{remaining_hours} hour' + ('s' if remaining_hours == 1 else ''))
+        time_list.append(f'{remaining_hours} hour' + ('s' if remaining_hours != 1 else ''))
         remaining_seconds %= seconds_in_hour
 
     if remaining_seconds >= seconds_in_minute:
         remaining_minutes = remaining_seconds // seconds_in_minute
-        time_list.append(f'{remaining_minutes} minute' + ('s' if remaining_minutes == 1 else ''))
+        time_list.append(f'{remaining_minutes} minute' + ('s' if remaining_minutes != 1 else ''))
         remaining_seconds %= seconds_in_minute
 
     if remaining_seconds:
-        time_list.append(f'{remaining_seconds} second' + ('s' if remaining_seconds == 1 else ''))
+        time_list.append(f'{remaining_seconds} second' + ('s' if remaining_seconds != 1 else ''))
 
     if len(time_list) > 1:
         time_string: str = ', '.join(time_list[0:-1])

@@ -7,7 +7,7 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import ForeignKey
 from sqlalchemy import DECIMAL
-from sqlalchemy import DATE
+from sqlalchemy import DATETIME
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
@@ -54,7 +54,8 @@ class Job(Base):
     title: Mapped[str] = mapped_column(String(32, collation='NOCASE'), nullable=False)
     company: Mapped[str] = mapped_column(String(32, collation='NOCASE'), nullable=False)
     # Default is an arbitrary date in the past so the user can immediately redeem paycheck
-    paycheck_redeemed: Mapped[DATE] = mapped_column(DATE, nullable=False, server_default='2020-01-01')
+    paycheck_redeemed: Mapped[DATETIME] = mapped_column(DATETIME, nullable=False,
+                                                        server_default='2020-01-01 00:00:00.000')
 
     def __str__(self):
         return f'Job Object:\n' \

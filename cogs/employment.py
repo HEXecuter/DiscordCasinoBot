@@ -10,8 +10,14 @@ from utils.helpers import get_user
 from utils.helpers import send_error_message
 from utils.helpers import send_response
 from utils.helpers import format_money
+from utils.helpers import format_timedelta
 from utils.helpers import get_multipliers
+from datetime import datetime
+from datetime import timedelta
 from decimal import Decimal
+
+PAYCHECK_INTERVAL: timedelta = timedelta(hours=1)
+BASE_PAY: Decimal = Decimal('100')
 
 
 class Employment(commands.Cog):
@@ -52,14 +58,15 @@ class Employment(commands.Cog):
         with Session(engine) as session:
             user: Union[User | None] = get_user(session, interaction.user.id, interaction.guild.id)
             user_not_exist: bool = user is None
+
             if user_not_exist:
                 await send_error_message(interaction, 'Error Applying for Job',
                                          'You can not apply for a job before creating an account')
                 return
-            else:
-                self.create_job(user, job_title, company_name)
-                await self.send_job_response(interaction, user)
-                session.commit()
+
+            self.create_job(user, job_title, company_name)
+            await self.send_job_response(interaction, user)
+            session.commit()
 
     @staticmethod
     def create_job(user: User, job_title: str, company_name: str):
@@ -102,7 +109,7 @@ class Employment(commands.Cog):
             user: Union[User | None] = get_user(session, interaction.user.id, interaction.guild.id)
             total_cost: Decimal = Employment.degrees[degree_type]['price'] * amount
             total_multiplier: Decimal = Employment.degrees[degree_type]['stat'] * amount
-            degree_name: str = Employment.degrees[degree_type]['friendly_name'] + ("s" if amount > 1 else '')
+            degree_name: str = Employment.degrees[degree_type]['friendly_name'] + ("s" if amount == 1 else '')
 
             user_not_exist: bool = user is None
             if user_not_exist:
@@ -116,11 +123,11 @@ class Employment(commands.Cog):
                                          f'You are too broke to buy {amount} {degree_name} in {field}. '
                                          f'Come back when you have {format_money(total_cost)}.')
                 return
-            else:
-                self.charge_user(user, total_cost)
-                self.create_multiplier(user, total_multiplier, amount, degree_type, field)
-                await self.send_degree_purchase_response(interaction, user, amount, total_cost, degree_name, field)
-                session.commit()
+
+            self.charge_user(user, total_cost)
+            self.create_multiplier(user, total_multiplier, amount, degree_type, field)
+            await self.send_degree_purchase_response(interaction, user, amount, total_cost, degree_name, field)
+            session.commit()
 
     @staticmethod
     def create_multiplier(user: User, multiplier: Decimal, amount: int, degree_type: str, field: str):
@@ -145,4 +152,55 @@ class Employment(commands.Cog):
         response.add_field(name=f"Total Paycheck Multiplier", value=f"```\n{get_multipliers(user):.0%}\n```",
                            inline=True)
         response.add_field(name=f"Account Balance", value=f"```\n{format_money(user.money)}\n```", inline=False)
+        await send_response(interaction, embed=response)
+
+    @nextcord.slash_command()
+    async def paycheck(self, interaction: nextcord.Interaction):
+        """Use this command to ✨get paid✨ daily"""
+        with Session(engine) as session:
+            user: Union[User | None] = get_user(session, interaction.user.id, interaction.guild.id)
+
+            user_not_exist: bool = user is None
+            if user_not_exist:
+                await send_error_message(interaction, 'Error Receiving Paycheck',
+                                         'You can not receive a paycheck if you do not have an account')
+                return
+
+            user_is_unemployed = user.job is None
+            if user_is_unemployed:
+                await send_error_message(interaction, 'Error Receiving Paycheck',
+                                         'You can not receive a paycheck if you do not have a job')
+                return
+
+            next_paycheck: datetime = user.job.paycheck_redeemed + PAYCHECK_INTERVAL
+            utc_time_now: datetime = datetime.utcnow()
+            time_difference: timedelta = next_paycheck - utc_time_now
+            paycheck_not_available = utc_time_now < next_paycheck
+            if paycheck_not_available:
+                await send_error_message(interaction, 'Error Receiving Paycheck',
+                                         f'You must wait {format_timedelta(time_difference)} '
+                                         f'for your next paycheck.')
+                return
+
+            multipliers: Decimal = get_multipliers(user)
+            paycheck_amount: Decimal = multipliers * BASE_PAY
+            self.pay_user(user, paycheck_amount)
+            user.job.paycheck_redeemed = utc_time_now
+            await self.send_paycheck_response(interaction, user, paycheck_amount, multipliers)
+            session.commit()
+
+    @staticmethod
+    def pay_user(user: User, amount: Decimal):
+        user.money += amount
+
+    @staticmethod
+    async def send_paycheck_response(interaction: nextcord.Interaction, user: User, amount: Decimal,
+                                     multipliers: Decimal):
+        response = nextcord.Embed(title="You Have Received Your Paycheck!")
+        response.add_field(name=f"Total Comp", value=f"```\n{format_money(amount)}\n```", inline=True)
+        response.add_field(name=f"Degree Modifiers", value=f"```\n{multipliers:.0%}\n```",
+                           inline=True)
+        response.add_field(name="Account Balance", value=f"```\n{format_money(user.money)}\n```", inline=False)
+        response.add_field(name=f"Job Title", value=f"```\n{user.job.title}\n```", inline=False)
+        response.add_field(name=f"Company Name", value=f"```\n{user.job.company}\n```", inline=False)
         await send_response(interaction, embed=response)
