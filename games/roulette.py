@@ -57,6 +57,9 @@ class Roulette:
         self.bet_total = Decimal('0.00')
         self.payout = Decimal('0.00')
 
+        self.tile_picked = ''
+        self.bet_hits = []
+
     def add_outside_bet(self, bet_type: str, amount: Decimal):
         if bet_type not in self.outside_bets:
             raise ValueError(f'Value supplied for bet_type is not valid: {bet_type=}')
@@ -109,16 +112,21 @@ class Roulette:
         if not self.bet_placed:
             raise RuntimeError('No bets have been placed')
 
-        tile_picked = choice(Roulette.TABLE_NUMBERS)
+        self.tile_picked = choice(Roulette.TABLE_NUMBERS)
         for outer_group in self.outside_bets:
-            if self.outside_mappings[outer_group](tile_picked) and self.outside_bets[outer_group]['amount'] > Decimal(
+            if self.outside_mappings[outer_group](self.tile_picked) and self.outside_bets[outer_group][
+                'amount'] > Decimal(
                     '0.00'):
-                self.payout += self.outside_bets[outer_group]['amount'] * (
-                        Decimal('1.00') + self.outside_bets[outer_group]['payout'])
+                bet_payout = self.outside_bets[outer_group]['amount'] * \
+                             (Decimal('1.00') + self.outside_bets[outer_group]['payout'])
+                self.payout += bet_payout
+                self.bet_hits.append([outer_group, bet_payout])
 
-        if tile_picked in self.inside_bets['straight up']['picks']:
-            self.payout += self.inside_bets['straight up']['picks'][tile_picked]['amount'] * (
-                    Decimal('1.00') + self.inside_bets['straight up']['payout'])
+        if self.tile_picked in self.inside_bets['straight up']['picks']:
+            bet_payout = self.inside_bets['straight up']['picks'][self.tile_picked]['amount'] * \
+                         (Decimal('1.00') + self.inside_bets['straight up']['payout'])
+            self.payout += bet_payout
+            self.bet_hits.append([self.tile_picked, bet_payout])
 
     @staticmethod
     def is_even(tile: str) -> bool:

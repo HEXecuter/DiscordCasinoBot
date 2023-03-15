@@ -7,6 +7,7 @@ from models.model import Games
 from models.model import engine
 from utils.helpers import get_user
 from utils.helpers import charge_user
+from utils.helpers import pay_user
 from utils.helpers import send_error_message
 from utils.helpers import send_response
 from utils.helpers import get_active_game
@@ -121,3 +122,51 @@ class RouletteCommands(commands.Cog):
             game.game_state = roulette_game.serialize_to_json()
             await self.send_bet_placed_response(interaction, game)
             session.commit()
+
+    @roulette.subcommand()
+    async def spin(self, interaction: nextcord.Interaction):
+        """Use this command to spin the roulette and win some money!"""
+        with Session(engine) as session:
+            user: Union[User | None] = get_user(session, interaction.user.id, interaction.guild.id)
+
+            user_not_exist: bool = user is None
+            if user_not_exist:
+                await send_error_message(interaction, 'Error Spinning Roulette',
+                                         'You can not play any casino games before creating an account')
+                return
+
+            game: Union[Games | None] = get_active_game(user, Roulette.GAME_TYPE)
+            if game is None:
+                await send_error_message(interaction, 'Error Spinning Roulette',
+                                         'You can not spin the roulette until you have placed a bet.')
+                return
+
+            roulette_game = Roulette.from_json(game.game_state)
+            roulette_game.play()
+
+            if roulette_game.payout > Decimal(0.00):
+                pay_user(user, roulette_game.payout)
+            session.delete(game)
+            session.commit()
+            await self.send_roulette_spin_response(interaction, user, roulette_game)
+
+    @staticmethod
+    async def send_roulette_spin_response(interaction: nextcord.Interaction, user: User, roulette: Roulette):
+        response = nextcord.Embed(title="You have spun the roulette!")
+        response.add_field(name=f"Tile Picked", value=f"```{roulette.tile_picked}\n```", inline=True)
+        response.add_field(name=f"Total Bets Placed", value=f"```\n{format_money(roulette.bet_total)}\n```",
+                           inline=True)
+        response.add_field(name=f"Total Winnings", value=f"```\n{format_money(roulette.payout)}\n```",
+                           inline=True)
+        response.add_field(name="Account Balance", value=f"```\n{format_money(user.money)}\n```", inline=False)
+        if len(roulette.bet_hits) > 0:
+            description = '```'
+            for bet_type, payout in roulette.bet_hits:
+                description += f"Your bet on {bet_type} won you {format_money(payout)}.\n"
+            description += '```'
+        else:
+            description = "```You didn't win anything this time.\n" \
+                          "Remember you can only lose 100% of your money, but you can win ∞ amount of money! " \
+                          "Do the math!\n```"
+        response.description = description
+        await send_response(interaction, embed=response)
