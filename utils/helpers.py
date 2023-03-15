@@ -26,11 +26,17 @@ def get_multipliers(user: User) -> Union[Decimal]:
         return multipliers_sum + Decimal('1.0')
 
 
-def get_active_game(user: User, game_type: str) -> Union[str | None]:
+def get_active_game(user: User, game_type: str) -> Games:
     return Session.object_session(user).execute(
-        select(Games.game_state)
-        .filter_by(user_id=user.id, game_type=game_type))\
+        select(Games)
+        .filter_by(user_id=user.id, game_type=game_type)) \
         .scalar()
+
+
+def register_new_game(user: User, game_type: str, game_state: str) -> Games:
+    game = Games(game_type=game_type, game_state=game_state)
+    user.games.append(game)
+    return game
 
 
 def format_money(amount: Union[Decimal | int | float]) -> str:
