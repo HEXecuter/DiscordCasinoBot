@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from typing import Union
 from models.model import User
 from models.model import Multipliers
+from models.model import Games
 from decimal import Decimal
 from locale import currency
 from datetime import timedelta
@@ -23,6 +24,13 @@ def get_multipliers(user: User) -> Union[Decimal]:
         return Decimal('1.0')
     else:
         return multipliers_sum + Decimal('1.0')
+
+
+def get_active_game(user: User, game_type: str) -> Union[str | None]:
+    return Session.object_session(user).execute(
+        select(Games.game_state)
+        .filter_by(user_id=user.id, game_type=game_type))\
+        .scalar()
 
 
 def format_money(amount: Union[Decimal | int | float]) -> str:
