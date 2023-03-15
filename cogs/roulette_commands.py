@@ -21,7 +21,7 @@ class RouletteCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @nextcord.slash_command(guild_ids=[868296265564319774])
+    @nextcord.slash_command()
     async def roulette(self, interaction: nextcord.Interaction):
         """
         Main command for roulette related subcommands
@@ -48,13 +48,13 @@ class RouletteCommands(commands.Cog):
             bet_amount = Decimal(bet_amount)
 
             if user_not_exist:
-                await send_error_message(interaction, 'Error Playing Roulette',
+                await send_error_message(interaction, 'Error Making Roulette Bet',
                                          'You can not play any casino games before creating an account')
                 return
 
             insufficient_funds = user.money < bet_amount
             if insufficient_funds:
-                await send_error_message(interaction, 'Error Purchasing Degree',
+                await send_error_message(interaction, 'Error Making Roulette Bet',
                                          f'You are too broke to make this bet. '
                                          f'Come back when you have {format_money(bet_amount)}.')
                 return
@@ -69,10 +69,55 @@ class RouletteCommands(commands.Cog):
             roulette_game.add_outside_bet(bet_type, bet_amount)
             charge_user(user, bet_amount)
             game.game_state = roulette_game.serialize_to_json()
-            await self.send_bet_placed_response(interaction, roulette_game)
+            await self.send_bet_placed_response(interaction, game)
             session.commit()
 
     @staticmethod
     async def send_bet_placed_response(interaction: nextcord.Interaction, game: Games):
         # TODO: Change response to image with chips once functionality is added
         await send_response(interaction, content=str(game))
+
+    @roulette.subcommand()
+    async def inside_bet(self,
+                         interaction: nextcord.Interaction,
+                         roulette_number: int = nextcord.SlashOption(min_value=0, max_value=36),
+                         bet_amount: int = nextcord.SlashOption(min_value=1)):
+        """Use this command to place an ✨inside bet✨ on the roulette table
+
+            Parameters
+            _____________
+            roulette_number: str
+                The roulette number for this bet Ex: 1
+            bet_amount: str
+                The amount of money you want to place for this bet
+        """
+        with Session(engine) as session:
+            user: Union[User | None] = get_user(session, interaction.user.id, interaction.guild.id)
+            user_not_exist: bool = user is None
+            bet_amount = Decimal(bet_amount)
+            roulette_number = str(roulette_number)
+
+            if user_not_exist:
+                await send_error_message(interaction, 'Error Making Roulette Bet',
+                                         'You can not play any casino games before creating an account')
+                return
+
+            insufficient_funds = user.money < bet_amount
+            if insufficient_funds:
+                await send_error_message(interaction, 'Error Making Roulette Bet',
+                                         f'You are too broke to make this bet. '
+                                         f'Come back when you have {format_money(bet_amount)}.')
+                return
+
+            game: Union[Games | None] = get_active_game(user, Roulette.GAME_TYPE)
+            if game is None:
+                roulette_game = Roulette()
+                game = register_new_game(user, Roulette.GAME_TYPE, roulette_game.serialize_to_json())
+            else:
+                roulette_game = Roulette.from_json(game.game_state)
+
+            roulette_game.add_inside_bet(roulette_number, bet_amount)
+            charge_user(user, bet_amount)
+            game.game_state = roulette_game.serialize_to_json()
+            await self.send_bet_placed_response(interaction, game)
+            session.commit()
