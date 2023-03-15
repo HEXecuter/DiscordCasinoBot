@@ -15,6 +15,14 @@ def get_user(session: Session, discord_id: int, guild_id: int) -> Union[None | U
     return session.execute(select(User).filter_by(discord_id=discord_id, guild_id=guild_id)).scalar()
 
 
+def pay_user(user: User, amount: Decimal):
+    user.money += amount
+
+
+def charge_user(user: User, cost: Decimal):
+    user.money -= cost
+
+
 def get_multipliers(user: User) -> Union[Decimal]:
     multipliers_sum: Union[Decimal | None] = Session.object_session(user).execute(
         select(func.sum(Multipliers.stat_multiplier))

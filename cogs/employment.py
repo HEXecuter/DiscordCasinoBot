@@ -7,6 +7,8 @@ from models.model import Multipliers
 from models.model import engine
 from sqlalchemy.orm import Session
 from utils.helpers import get_user
+from utils.helpers import pay_user
+from utils.helpers import charge_user
 from utils.helpers import send_error_message
 from utils.helpers import send_response
 from utils.helpers import format_money
@@ -124,7 +126,7 @@ class Employment(commands.Cog):
                                          f'Come back when you have {format_money(total_cost)}.')
                 return
 
-            self.charge_user(user, total_cost)
+            charge_user(user, total_cost)
             self.create_multiplier(user, total_multiplier, amount, degree_type, field)
             await self.send_degree_purchase_response(interaction, user, amount, total_cost, degree_name, field)
             session.commit()
@@ -133,10 +135,6 @@ class Employment(commands.Cog):
     def create_multiplier(user: User, multiplier: Decimal, amount: int, degree_type: str, field: str):
         user.multipliers.append(
             Multipliers(stat_multiplier=multiplier, amount_owned=amount, degree_type=degree_type, field=field))
-
-    @staticmethod
-    def charge_user(user: User, cost: Decimal):
-        user.money -= cost
 
     @staticmethod
     async def send_degree_purchase_response(interaction: nextcord.Interaction,
@@ -184,14 +182,10 @@ class Employment(commands.Cog):
 
             multipliers: Decimal = get_multipliers(user)
             paycheck_amount: Decimal = multipliers * BASE_PAY
-            self.pay_user(user, paycheck_amount)
+            pay_user(user, paycheck_amount)
             user.job.paycheck_redeemed = utc_time_now
             await self.send_paycheck_response(interaction, user, paycheck_amount, multipliers)
             session.commit()
-
-    @staticmethod
-    def pay_user(user: User, amount: Decimal):
-        user.money += amount
 
     @staticmethod
     async def send_paycheck_response(interaction: nextcord.Interaction, user: User, amount: Decimal,
