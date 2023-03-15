@@ -6,6 +6,7 @@ import nextcord
 from nextcord.ext import commands
 from cogs.account import AccountManagement
 from cogs.employment import Employment
+from cogs.roulette_commands import RouletteCommands
 
 
 load_dotenv()
@@ -19,4 +20,5 @@ setlocale(LC_ALL, LOCALE)
 bot: nextcord.ext.commands.bot.Bot = commands.Bot()
 bot.add_cog(AccountManagement(bot))
 bot.add_cog(Employment(bot))
+bot.add_cog(RouletteCommands(bot))
 bot.run(TOKEN)

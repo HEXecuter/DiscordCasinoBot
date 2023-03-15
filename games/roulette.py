@@ -8,6 +8,10 @@ class Roulette:
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18',
         '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36')
 
+    OUTSIDE_BETS = ('even', 'odd', 'first dozen', 'second dozen', 'third dozen', 'low', 'high')
+
+    GAME_TYPE = 'roulette'
+
     def __init__(self):
         self.outside_mappings = {
             'even': self.is_even,
@@ -93,8 +97,8 @@ class Roulette:
         self.outside_bets = state['outside_bets']
         self.inside_bets = state['inside_bets']
         self.bet_placed = state['bet_placed']
-        self.bet_total = state['bet_total']
-        self.payout = state['payout']
+        self.bet_total = Decimal(state['bet_total'])
+        self.payout = Decimal(state['payout'])
         return self
 
     @classmethod
@@ -106,20 +110,15 @@ class Roulette:
             raise RuntimeError('No bets have been placed')
 
         tile_picked = choice(Roulette.TABLE_NUMBERS)
-        print(f'{tile_picked=}')
         for outer_group in self.outside_bets:
             if self.outside_mappings[outer_group](tile_picked) and self.outside_bets[outer_group]['amount'] > Decimal(
                     '0.00'):
                 self.payout += self.outside_bets[outer_group]['amount'] * (
                         Decimal('1.00') + self.outside_bets[outer_group]['payout'])
-                print(f'hit on {outer_group=} for {tile_picked}')
-                print(self.payout)
 
         if tile_picked in self.inside_bets['straight up']['picks']:
             self.payout += self.inside_bets['straight up']['picks'][tile_picked]['amount'] * (
                     Decimal('1.00') + self.inside_bets['straight up']['payout'])
-            print(f'hit on {tile_picked=}')
-            print(self.payout)
 
     @staticmethod
     def is_even(tile: str) -> bool:
