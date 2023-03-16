@@ -76,13 +76,14 @@ class RouletteCommands(commands.Cog):
 
             charge_user(user, bet_amount)
             game.game_state = roulette_game.serialize_to_json()
-            await self.send_bet_placed_response(interaction, game)
+            await self.send_bet_placed_response(interaction, roulette_game)
             session.commit()
 
     @staticmethod
-    async def send_bet_placed_response(interaction: nextcord.Interaction, game: Games):
+    async def send_bet_placed_response(interaction: nextcord.Interaction, roulette_game: Roulette):
         # TODO: Change response to image with chips once functionality is added
-        await send_response(interaction, content=str(game))
+        await send_response(interaction, file=nextcord.File(fp=roulette_game.create_table_image(),
+                                                            filename='roulette bets.png'))
 
     @roulette.subcommand()
     async def inside_bet(self,

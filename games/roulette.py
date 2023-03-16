@@ -2,6 +2,7 @@ from decimal import Decimal
 from random import choice
 from os import path
 from PIL import Image, ImageFont, ImageDraw
+from io import BytesIO
 import json
 from utils.helpers import format_money
 
@@ -32,9 +33,9 @@ class Roulette:
         'y_distance': 92
     }
 
-    _CHIP_PATH = path.join('images', 'chip.png')
-    _TABLE_PATH = path.join('images', 'roulette_table.png')
-    _FONT_TTF_PATH = path.join('fonts', 'Smokum-Regular.ttf')
+    _CHIP_PATH = path.join(path.dirname(__file__), 'images', 'chip.png')
+    _TABLE_PATH = path.join(path.dirname(__file__), 'images', 'roulette_table.png')
+    _FONT_TTF_PATH = path.join(path.dirname(__file__), 'fonts', 'Smokum-Regular.ttf')
 
     def __init__(self):
         self.outside_mappings = {
@@ -228,7 +229,7 @@ class Roulette:
         drawable_chip.text((centered_x_axis, centered_y_axis), text, font=font, fill='black')
         return chip_image
 
-    def create_table_image(self):
+    def create_table_image(self) -> BytesIO:
         roulette_table = Image.open(Roulette._TABLE_PATH)
         for outer_bet in self.outside_bets:
             if self.outside_bets[outer_bet]['amount'] != Decimal('0.00'):
@@ -246,7 +247,10 @@ class Roulette:
             chip_y = start_y - (chip_image.height // 2)
             roulette_table.paste(chip_image, (chip_x, chip_y), mask=chip_image.convert('RGBA'))
 
-        return roulette_table
+        roulette_table_bytes = BytesIO()
+        roulette_table.save(roulette_table_bytes, 'PNG')
+        roulette_table_bytes.seek(0)
+        return roulette_table_bytes
 
     @staticmethod
     def calculate_inside_bet_position(inside_bet: str):
