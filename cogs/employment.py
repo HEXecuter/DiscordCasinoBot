@@ -51,8 +51,8 @@ class Employment(commands.Cog):
 
     @job.subcommand()
     async def apply(self, interaction: nextcord.Interaction,
-                            job_title: str = nextcord.SlashOption(min_length=5, max_length=32),
-                            company_name: str = nextcord.SlashOption(min_length=5, max_length=32)):
+                    job_title: str = nextcord.SlashOption(min_length=5, max_length=32),
+                    company_name: str = nextcord.SlashOption(min_length=5, max_length=32)):
         """use this command to apply for your ✨first and only job✨
 
         Parameters
@@ -203,5 +203,3 @@ class Employment(commands.Cog):
                            inline=True)
         response.add_field(name=f"Account Balance", value=f"```\n{format_money(user.money)}\n```", inline=False)
         await send_response(interaction, embed=response)
-
-

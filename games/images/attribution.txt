@@ -2,4 +2,8 @@ roulette_table.png
     - Provided by Vecteezy.com with free license requiring attribution
     - https://www.vecteezy.com/free-vector/roulette-table
 chip.png
+    - free license requiring attribution
     - poker PNG Designed By ALVAN REMAG ID from https://pngtree.com/freepng/poker-chip_8470970.html?sol=downref&id=bef
+cards
+    - Cards provided by https://code.google.com/archive/p/vector-playing-cards/
+    - Back.png was provided by http://david.bellot.free.fr/
