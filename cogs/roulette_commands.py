@@ -84,7 +84,7 @@ class RouletteCommands(commands.Cog):
         response = nextcord.Embed(title=f"Bet Placed!", color=0x00e1ff)
         response.add_field(name=f"Total Bets Placed", value=f"```\n{format_money(roulette_game.bet_total)}\n```",
                            inline=True)
-        response.add_field(name="Account Balance", value=f"```\n{format_money(user.money)}\n```", inline=False)
+        response.add_field(name="Account Balance", value=f"```\n{format_money(user.money)}\n```", inline=True)
         await send_response(interaction, embed=response, file=nextcord.File(fp=roulette_game.create_table_image(),
                                                                             filename='roulette bets.png'))
 

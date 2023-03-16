@@ -34,7 +34,7 @@ class Roulette:
     }
 
     _CHIP_PATH = path.join(path.dirname(__file__), 'images', 'chip.png')
-    _TABLE_PATH = path.join(path.dirname(__file__), 'images', 'roulette_table.png')
+    _TABLE_PATH = path.join(path.dirname(__file__), 'images', 'roulette', 'roulette_table.png')
     _FONT_TTF_PATH = path.join(path.dirname(__file__), 'fonts', 'Smokum-Regular.ttf')
 
     def __init__(self):

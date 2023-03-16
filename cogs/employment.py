@@ -26,7 +26,7 @@ class Employment(commands.Cog):
     degrees = {
         'bachelors': {
             'price': Decimal("1000"),
-            'stat': Decimal("1"),
+            'stat': Decimal("1.25"),
             'friendly_name': 'Bachelors Degree'
         },
         'phd': {
@@ -45,7 +45,12 @@ class Employment(commands.Cog):
         self.bot = bot
 
     @nextcord.slash_command()
-    async def apply_for_job(self, interaction: nextcord.Interaction,
+    async def job(self, interaction: nextcord.Interaction):
+        """Main command for job related subcommands"""
+        pass
+
+    @job.subcommand()
+    async def apply(self, interaction: nextcord.Interaction,
                             job_title: str = nextcord.SlashOption(min_length=5, max_length=32),
                             company_name: str = nextcord.SlashOption(min_length=5, max_length=32)):
         """use this command to apply for your ✨first and only job✨
@@ -87,6 +92,53 @@ class Employment(commands.Cog):
                                f"Thanks to their mistake, you are now the {user.job.title} at {user.job.company}. " \
                                f"Don't forget to get your paycheck! You can also \"study hard\" and pay " \
                                f"for certifications and degrees that increase your salary.\n```"
+        response.add_field(name=f"Job Title", value=f"```\n{user.job.title}\n```", inline=False)
+        response.add_field(name=f"Company Name", value=f"```\n{user.job.company}\n```", inline=False)
+        await send_response(interaction, embed=response)
+
+    @job.subcommand()
+    async def paycheck(self, interaction: nextcord.Interaction):
+        """Use this command to ✨get paid✨ daily"""
+        with Session(engine) as session:
+            user: Union[User | None] = get_user(session, interaction.user.id, interaction.guild.id)
+
+            user_not_exist: bool = user is None
+            if user_not_exist:
+                await send_error_message(interaction, 'Error Receiving Paycheck',
+                                         'You can not receive a paycheck if you do not have an account')
+                return
+
+            user_is_unemployed = user.job is None
+            if user_is_unemployed:
+                await send_error_message(interaction, 'Error Receiving Paycheck',
+                                         'You can not receive a paycheck if you do not have a job')
+                return
+
+            next_paycheck: datetime = user.job.paycheck_redeemed + PAYCHECK_INTERVAL
+            utc_time_now: datetime = datetime.utcnow()
+            time_difference: timedelta = next_paycheck - utc_time_now
+            paycheck_not_available = utc_time_now < next_paycheck
+            if paycheck_not_available:
+                await send_error_message(interaction, 'Error Receiving Paycheck',
+                                         f'You must wait {format_timedelta(time_difference)} '
+                                         f'for your next paycheck.')
+                return
+
+            multipliers: Decimal = get_multipliers(user)
+            paycheck_amount: Decimal = multipliers * BASE_PAY
+            pay_user(user, paycheck_amount)
+            user.job.paycheck_redeemed = utc_time_now
+            await self.send_paycheck_response(interaction, user, paycheck_amount, multipliers)
+            session.commit()
+
+    @staticmethod
+    async def send_paycheck_response(interaction: nextcord.Interaction, user: User, amount: Decimal,
+                                     multipliers: Decimal):
+        response = nextcord.Embed(title="You Have Received Your Paycheck!")
+        response.add_field(name=f"Total Comp", value=f"```\n{format_money(amount)}\n```", inline=True)
+        response.add_field(name=f"Degree Modifiers", value=f"```\n{multipliers:.0%}\n```",
+                           inline=True)
+        response.add_field(name="Account Balance", value=f"```\n{format_money(user.money)}\n```", inline=False)
         response.add_field(name=f"Job Title", value=f"```\n{user.job.title}\n```", inline=False)
         response.add_field(name=f"Company Name", value=f"```\n{user.job.company}\n```", inline=False)
         await send_response(interaction, embed=response)
@@ -152,49 +204,4 @@ class Employment(commands.Cog):
         response.add_field(name=f"Account Balance", value=f"```\n{format_money(user.money)}\n```", inline=False)
         await send_response(interaction, embed=response)
 
-    @nextcord.slash_command()
-    async def paycheck(self, interaction: nextcord.Interaction):
-        """Use this command to ✨get paid✨ daily"""
-        with Session(engine) as session:
-            user: Union[User | None] = get_user(session, interaction.user.id, interaction.guild.id)
 
-            user_not_exist: bool = user is None
-            if user_not_exist:
-                await send_error_message(interaction, 'Error Receiving Paycheck',
-                                         'You can not receive a paycheck if you do not have an account')
-                return
-
-            user_is_unemployed = user.job is None
-            if user_is_unemployed:
-                await send_error_message(interaction, 'Error Receiving Paycheck',
-                                         'You can not receive a paycheck if you do not have a job')
-                return
-
-            next_paycheck: datetime = user.job.paycheck_redeemed + PAYCHECK_INTERVAL
-            utc_time_now: datetime = datetime.utcnow()
-            time_difference: timedelta = next_paycheck - utc_time_now
-            paycheck_not_available = utc_time_now < next_paycheck
-            if paycheck_not_available:
-                await send_error_message(interaction, 'Error Receiving Paycheck',
-                                         f'You must wait {format_timedelta(time_difference)} '
-                                         f'for your next paycheck.')
-                return
-
-            multipliers: Decimal = get_multipliers(user)
-            paycheck_amount: Decimal = multipliers * BASE_PAY
-            pay_user(user, paycheck_amount)
-            user.job.paycheck_redeemed = utc_time_now
-            await self.send_paycheck_response(interaction, user, paycheck_amount, multipliers)
-            session.commit()
-
-    @staticmethod
-    async def send_paycheck_response(interaction: nextcord.Interaction, user: User, amount: Decimal,
-                                     multipliers: Decimal):
-        response = nextcord.Embed(title="You Have Received Your Paycheck!")
-        response.add_field(name=f"Total Comp", value=f"```\n{format_money(amount)}\n```", inline=True)
-        response.add_field(name=f"Degree Modifiers", value=f"```\n{multipliers:.0%}\n```",
-                           inline=True)
-        response.add_field(name="Account Balance", value=f"```\n{format_money(user.money)}\n```", inline=False)
-        response.add_field(name=f"Job Title", value=f"```\n{user.job.title}\n```", inline=False)
-        response.add_field(name=f"Company Name", value=f"```\n{user.job.company}\n```", inline=False)
-        await send_response(interaction, embed=response)
