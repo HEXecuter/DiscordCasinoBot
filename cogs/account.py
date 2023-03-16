@@ -23,7 +23,12 @@ class AccountManagement(commands.Cog):
         self.bot = bot
 
     @nextcord.slash_command()
-    async def create_account(
+    async def account(self, interaction: nextcord.Interaction):
+        """Main command for account related subcommands"""
+        pass
+
+    @account.subcommand()
+    async def create(
             self, interaction: nextcord.Interaction,
             pet_name: str = nextcord.SlashOption(min_length=2, max_length=32)):
         """Use this command to get started, include your pet's name to stay ✨motivated✨ 🙈 😉
@@ -60,7 +65,6 @@ class AccountManagement(commands.Cog):
                            value=f"```\n{datetime.now().strftime('%m/%d/%Y')}\n```", inline=True)
         response.add_field(name="Date _̷̱̃_̷̲̆  ̸̱̔_̴͇̉ ̴̭͠_̶_̦̎ _̵͔̿_̶̪́ ̴̵̳͌͝?̟",
                            value=f"```\n{randint(1, 12):02}/{randint(1, 28):02}/2̶̺̘̈͊0̷̢̎̀?̷̘̅?̸̢͓͘\n```", inline=True)
-        # response.set_thumbnail(bot.user.avatar.url)
         response.description = \
             f"```Hello {interaction.user.display_name},\n" \
             f"Since you do not have any money, I have deposited {format_money(Decimal(MONEY_DEFAULT))} into " \
@@ -69,8 +73,8 @@ class AccountManagement(commands.Cog):
             f"Hurry before someone else buys {pet_name} from me!\n```"
         await send_response(interaction, embed=response)
 
-    @nextcord.slash_command()
-    async def view_account(self, interaction: nextcord.Interaction, member: nextcord.Member):
+    @account.subcommand()
+    async def view(self, interaction: nextcord.Interaction, member: nextcord.Member):
         """Use this command to get information on someone's account
 
         Parameters
