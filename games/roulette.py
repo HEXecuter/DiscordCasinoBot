@@ -28,7 +28,7 @@ class Roulette:
     _INSIDE_IMAGE_POSITIONS = {
         '0': (48, 140),
         '1': (135, 232),
-        'x_distance': 80,
+        'x_distance': 81,
         'y_distance': 92
     }
 
@@ -227,3 +227,35 @@ class Roulette:
         centered_y_axis = (chip_height - h) / 2
         drawable_chip.text((centered_x_axis, centered_y_axis), text, font=font, fill='black')
         return chip_image
+
+    def create_table_image(self):
+        roulette_table = Image.open(Roulette._TABLE_PATH)
+        for outer_bet in self.outside_bets:
+            if self.outside_bets[outer_bet]['amount'] != Decimal('0.00'):
+                bet_value = self.outside_bets[outer_bet]['amount']
+                chip_image = self.create_chip(bet_value)
+                chip_x = self._OUTSIDE_IMAGE_POSITIONS[outer_bet][0] - int(chip_image.width / 2)
+                chip_y = self._OUTSIDE_IMAGE_POSITIONS[outer_bet][1] - int(chip_image.height / 2)
+                roulette_table.paste(chip_image, (chip_x, chip_y), mask=chip_image.convert('RGBA'))
+
+        for inside_bet in self.inside_bets['straight up']['picks']:
+            bet_value = self.inside_bets['straight up']['picks'][inside_bet]['amount']
+            chip_image = self.create_chip(bet_value)
+            start_x, start_y = self.calculate_inside_bet_position(inside_bet)
+            chip_x = start_x - (chip_image.width // 2)
+            chip_y = start_y - (chip_image.height // 2)
+            roulette_table.paste(chip_image, (chip_x, chip_y), mask=chip_image.convert('RGBA'))
+
+        return roulette_table
+
+    @staticmethod
+    def calculate_inside_bet_position(inside_bet: str):
+        if inside_bet == '0' or inside_bet == '1':
+            return Roulette._INSIDE_IMAGE_POSITIONS[inside_bet]
+
+        starting_x = Roulette._INSIDE_IMAGE_POSITIONS['1'][0]
+        starting_y = Roulette._INSIDE_IMAGE_POSITIONS['1'][1]
+        number_bet = int(inside_bet)
+        x_pos = starting_x + (((number_bet - 1) // 3) * Roulette._INSIDE_IMAGE_POSITIONS['x_distance'])
+        y_pos = starting_y - (((number_bet - 1) % 3) * Roulette._INSIDE_IMAGE_POSITIONS['y_distance'])
+        return x_pos, y_pos
