@@ -130,7 +130,7 @@ class RouletteCommands(commands.Cog):
     @staticmethod
     async def send_roulette_spin_response(interaction: nextcord.Interaction, user: User, roulette: Roulette):
         response = nextcord.Embed(title="You have spun the roulette!")
-        response.add_field(name=f"Tile Picked", value=f"```{roulette.tile_picked}\n```", inline=True)
+        response.add_field(name=f"Number Rolled", value=f"```{roulette.tile_picked}\n```", inline=True)
         response.add_field(name=f"Total Bets Placed", value=f"```\n{format_money(roulette.bet_total)}\n```",
                            inline=True)
         response.add_field(name=f"Total Winnings", value=f"```\n{format_money(roulette.payout)}\n```",
@@ -143,7 +143,6 @@ class RouletteCommands(commands.Cog):
             description += '```'
         else:
             description = "```You didn't win anything this time.\n" \
-                          "Remember you can only lose 100% of your money, but you can win ∞ amount of money! " \
-                          "Do the math!\n```"
+                          "I'm sure you will win big time, if you bet this month's mortgage!\n```"
         response.description = description
         await send_response(interaction, embed=response)

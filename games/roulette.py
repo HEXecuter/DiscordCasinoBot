@@ -1,6 +1,9 @@
 from decimal import Decimal
 from random import choice
+from os import path
+from PIL import Image, ImageFont, ImageDraw
 import json
+from utils.helpers import format_money
 
 
 class Roulette:
@@ -11,6 +14,27 @@ class Roulette:
     OUTSIDE_BETS = ('even', 'odd', 'first dozen', 'second dozen', 'third dozen', 'low', 'high')
 
     GAME_TYPE = 'roulette'
+
+    _OUTSIDE_IMAGE_POSITIONS = {
+        'even': (336, 410),
+        'odd': (820, 410),
+        'first dozen': (257, 321),
+        'second dozen': (578, 321),
+        'third dozen': (900, 321),
+        'low': (176, 410),
+        'high': (980, 410),
+    }
+
+    _INSIDE_IMAGE_POSITIONS = {
+        '0': (48, 140),
+        '1': (135, 232),
+        'x_distance': 80,
+        'y_distance': 92
+    }
+
+    _CHIP_PATH = path.join('images', 'chip.png')
+    _TABLE_PATH = path.join('images', 'roulette_table.png')
+    _FONT_TTF_PATH = path.join('fonts', 'Smokum-Regular.ttf')
 
     def __init__(self):
         self.outside_mappings = {
@@ -114,9 +138,8 @@ class Roulette:
 
         self.tile_picked = choice(Roulette.TABLE_NUMBERS)
         for outer_group in self.outside_bets:
-            if self.outside_mappings[outer_group](self.tile_picked) and self.outside_bets[outer_group][
-                'amount'] > Decimal(
-                    '0.00'):
+            if self.outside_mappings[outer_group](self.tile_picked) and \
+                    self.outside_bets[outer_group]['amount'] > Decimal('0.00'):
                 bet_payout = self.outside_bets[outer_group]['amount'] * \
                              (Decimal('1.00') + self.outside_bets[outer_group]['payout'])
                 self.payout += bet_payout
@@ -188,3 +211,19 @@ class Roulette:
         if 19 <= num <= 36:
             return True
         return False
+
+    @staticmethod
+    def create_chip(value: Decimal) -> Image:
+        chip_image: Image = Image.open(Roulette._CHIP_PATH)
+        chip_width = chip_image.width
+        chip_height = chip_image.height
+
+        drawable_chip: ImageDraw = ImageDraw.Draw(chip_image)
+        font = ImageFont.truetype(Roulette._FONT_TTF_PATH, 20)
+        text = format_money(value)[0:-3]
+        _, _, w, h = drawable_chip.textbbox((0, 0), text, font=font)
+
+        centered_x_axis = (chip_width - w) / 2
+        centered_y_axis = (chip_height - h) / 2
+        drawable_chip.text((centered_x_axis, centered_y_axis), text, font=font, fill='black')
+        return chip_image
