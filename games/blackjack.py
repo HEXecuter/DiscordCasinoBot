@@ -121,12 +121,8 @@ class BlackJack:
         while self._calculate_hand_value(self.state['house_hand']) < 17:
             self._hit_house()
         winner = self._get_winner()
-        print(winner)
-        print(self._calculate_hand_value(self.state['player_hand']))
-        print(self._calculate_hand_value(self.state['house_hand']))
         if winner == 'player':
             if self._calculate_hand_value(self.state['player_hand']) == 21 and len(self.state['player_hand']) == 2:
-                print('natural')
                 self.state['payout'] = self.state['bet_amount'] * 3
             else:
                 self.state['payout'] = self.state['bet_amount'] * 2

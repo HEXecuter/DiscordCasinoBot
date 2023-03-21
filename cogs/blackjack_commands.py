@@ -11,6 +11,7 @@ from utils.helpers import get_active_game
 from utils.helpers import register_new_game
 from utils.helpers import format_money
 from utils.helpers import charge_user
+from utils.helpers import pay_user
 from sqlalchemy.orm import Session
 from decimal import Decimal
 from typing import Union
@@ -31,6 +32,18 @@ class BlackjackCommands(commands.Cog):
     async def start(self, interaction: nextcord.Interaction, bet_amount: int = nextcord.SlashOption(min_value=1)):
         bet_amount = Decimal(bet_amount)
         await self.play_game(interaction, 'start', bet_amount)
+
+    @blackjack.subcommand()
+    async def double_down(self, interaction: nextcord.Interaction):
+        await self.play_game(interaction, 'double down')
+
+    @blackjack.subcommand()
+    async def stand(self, interaction: nextcord.Interaction):
+        await self.play_game(interaction, 'stand')
+
+    @blackjack.subcommand()
+    async def hit(self, interaction: nextcord.Interaction):
+        await self.play_game(interaction, 'hit')
 
     async def play_game(self, interaction, action: str, bet_amount: Decimal = Decimal(0)):
         with Session(engine) as session:
@@ -63,8 +76,32 @@ class BlackjackCommands(commands.Cog):
                     return
                 else:
                     await self.send_game_state(interaction, BlackJack.from_json(game.game_state))
+                    return
 
             blackjack_game = BlackJack.from_json(game.game_state)
+            if action == 'double down':
+                insufficient_funds = user.money < blackjack_game.state['bet_amount']
+                if insufficient_funds:
+                    await send_error_message(interaction, 'Error Doubling Down',
+                                             f"You do not have enough money to double down. "
+                                             f"Come back when you have {blackjack_game.state['bet_amount']}.")
+                    return
+                charge_user(user, blackjack_game.state['bet_amount'])
+                blackjack_game.double_down()
+
+            if action == 'hit':
+                blackjack_game.hit_player()
+
+            if action == 'stand':
+                blackjack_game.stand()
+
+            await self.send_game_state(interaction, blackjack_game)
+            if blackjack_game.state['game_ended']:
+                if blackjack_game.state['payout'] > Decimal(0.00):
+                    pay_user(user, blackjack_game.state['payout'])
+                session.delete(game)
+            else:
+                game.game_state = blackjack_game.serialize_to_json()
             session.commit()
 
     @staticmethod
