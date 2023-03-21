@@ -24,8 +24,6 @@ class BlackJack:
             'game_ended': False,
             'can_double_down': True
         }
-        self._load_playing_cards()
-        self._shuffle_cards()
 
     def _load_playing_cards(self):
         self.state['remaining_cards'] = os.listdir(BlackJack._CARDS_BASE_DIRECTORY)
@@ -48,6 +46,8 @@ class BlackJack:
         self.state['bet_amount'] += bet_amount
 
     def start_game(self, bet_amount: Decimal):
+        self._load_playing_cards()
+        self._shuffle_cards()
         self._add_to_bet(bet_amount)
         self.state['house_hand'].append(self._deal_card())
         self.state['house_hand'].append(self._deal_card())
@@ -132,7 +132,7 @@ class BlackJack:
     def serialize_to_json(self):
         return json.dumps(self.state, default=str)
 
-    def deserialize_from_json(self, state: str):
+    def _deserialize_from_json(self, state: str):
         self.state = json.loads(state)
         self.state['payout'] = Decimal(self.state['payout'])
         self.state['bet_amount'] = Decimal(self.state['bet_amount'])
@@ -140,7 +140,7 @@ class BlackJack:
 
     @classmethod
     def from_json(cls, state: str):
-        return BlackJack().deserialize_from_json(state)
+        return BlackJack()._deserialize_from_json(state)
 
     def _create_hand_image(self, hand: list[str], hide_second_card: bool = False) -> Image:
         spacing_between_cards = 20
