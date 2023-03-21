@@ -75,7 +75,7 @@ class BlackjackCommands(commands.Cog):
                     session.commit()
                     return
                 else:
-                    await self.send_game_state(interaction, BlackJack.from_json(game.game_state))
+                    await self.send_game_state(interaction, BlackJack.from_json(game.game_state), user)
                     return
 
             blackjack_game = BlackJack.from_json(game.game_state)
@@ -95,13 +95,13 @@ class BlackjackCommands(commands.Cog):
             if action == 'stand':
                 blackjack_game.stand()
 
-            await self.send_game_state(interaction, blackjack_game)
             if blackjack_game.state['game_ended']:
                 if blackjack_game.state['payout'] > Decimal(0.00):
                     pay_user(user, blackjack_game.state['payout'])
                 session.delete(game)
             else:
                 game.game_state = blackjack_game.serialize_to_json()
+            await self.send_game_state(interaction, blackjack_game, user)
             session.commit()
 
     @staticmethod
@@ -110,9 +110,22 @@ class BlackjackCommands(commands.Cog):
         charge_user(user, bet_amount)
         blackjack_game.start_game(bet_amount)
         register_new_game(user, BlackJack.GAME_TYPE, blackjack_game.serialize_to_json())
-        await BlackjackCommands.send_game_state(interaction, blackjack_game)
+        await BlackjackCommands.send_game_state(interaction, blackjack_game, user)
 
     @staticmethod
-    async def send_game_state(interaction: nextcord.Interaction, black_jack_game: BlackJack):
-        await send_response(interaction, file=nextcord.File(fp=black_jack_game.create_table_image(),
-                                                            filename='blackjack.png'))
+    async def send_game_state(interaction: nextcord.Interaction, black_jack_game: BlackJack, user: User):
+        if black_jack_game.state['game_ended']:
+            response = nextcord.Embed(title=f"Bet Placed!", color=0x00e1ff)
+            response.add_field(name=f"Bet Placed",
+                               value=f"```\n{format_money(black_jack_game.state['bet_amount'])}\n```",
+                               inline=True)
+            response.add_field(name=f"Total Winnings",
+                               value=f"```\n{format_money(black_jack_game.state['payout'])}\n```",
+                               inline=True)
+            response.add_field(name="Account Balance", value=f"```\n{format_money(user.money)}\n```", inline=False)
+
+            await send_response(interaction, embed=response, file=nextcord.File(fp=black_jack_game.create_table_image(),
+                                                                                filename='blackjack.png'))
+        else:
+            await send_response(interaction, file=nextcord.File(fp=black_jack_game.create_table_image(),
+                                                                filename='blackjack.png'))
