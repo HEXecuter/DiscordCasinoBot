@@ -146,7 +146,7 @@ class BlackJack:
     def from_json(cls, state: str):
         return BlackJack().deserialize_from_json(state)
 
-    def create_hand_image(self, hand: list[str], hide_second_card: bool = False) -> Image:
+    def _create_hand_image(self, hand: list[str], hide_second_card: bool = False) -> Image:
         spacing_between_cards = 20
         card_images: list[Image] = []
         for index, card_name in enumerate(hand):
@@ -165,7 +165,7 @@ class BlackJack:
             current_x += spacing_between_cards + card_width
         return canvas
 
-    def create_headline_image(self) -> Image:
+    def _create_headline_image(self) -> Image:
         spacing = 10
         if self.state['game_ended']:
             winner = self._get_winner()
@@ -188,9 +188,9 @@ class BlackJack:
     def create_table_image(self) -> BytesIO:
         spacing_between_decks = 100
         width_min = 2500
-        headline_image = self.create_headline_image()
-        house_deck = self.create_hand_image(self.state['house_hand'], True)
-        player_deck = self.create_hand_image(self.state['player_hand'], False)
+        headline_image = self._create_headline_image()
+        house_deck = self._create_hand_image(self.state['house_hand'], True)
+        player_deck = self._create_hand_image(self.state['player_hand'], False)
 
         max_width = max(width_min, headline_image.width, player_deck.width, house_deck.width)
         max_width += max_width // 2
