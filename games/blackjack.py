@@ -1,10 +1,10 @@
 import os
 from random import shuffle
 from decimal import Decimal
+import json
 
 
 class BlackJack:
-    # TODO: Add serialize_to_json method and alternate constructor from json
     GAME_TYPE = 'blackjack'
     _CARDS_BASE_DIRECTORY = os.path.join(os.path.dirname(__file__), 'images', 'cards')
 
@@ -126,3 +126,16 @@ class BlackJack:
                 self.state['payout'] = self.state['bet_amount'] * 2
         if winner == 'push':
             self.state['payout'] = self.state['bet_amount']
+
+    def serialize_to_json(self):
+        return json.dumps(self.state, default=str)
+
+    def deserialize_from_json(self, state: str):
+        self.state = json.loads(state)
+        self.state['payout'] = Decimal(self.state['payout'])
+        self.state['bet_amount'] = Decimal(self.state['bet_amount'])
+        return self
+
+    @classmethod
+    def from_json(cls, state: str):
+        return BlackJack().deserialize_from_json(state)
