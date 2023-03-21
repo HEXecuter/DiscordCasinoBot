@@ -1,6 +1,7 @@
 import os
 from random import shuffle
 from decimal import Decimal
+from PIL import Image
 import json
 
 
@@ -139,3 +140,22 @@ class BlackJack:
     @classmethod
     def from_json(cls, state: str):
         return BlackJack().deserialize_from_json(state)
+
+    def create_house_image(self, hand: list[str], hide_second_card: bool = False) -> Image:
+        spacing_between_cards = 10
+        card_images: list[Image] = []
+        for index, card_name in enumerate(hand):
+            if index == 1 and hide_second_card and not self.state['game_ended']:
+                card_name = 'back.png'
+            card_images.append(Image.open(os.path.join(BlackJack._CARDS_BASE_DIRECTORY, card_name)))
+        card_width = card_images[0].width
+        card_height = card_images[0].height
+        canvas = Image.new('RGBA',
+                           # Calculate width of blank canvas with 10 px spacing on each edge and between all cards
+                           ((card_width * len(card_images)) + (spacing_between_cards * (len(card_images) + 1)),
+                            card_height))
+        current_x = spacing_between_cards
+        for image in card_images:
+            canvas.paste(image, (current_x, 0), mask=image.convert('RGBA'))
+            current_x += spacing_between_cards + card_width
+        return canvas
