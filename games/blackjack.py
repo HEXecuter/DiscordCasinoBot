@@ -2,12 +2,17 @@ import os
 from random import shuffle
 from decimal import Decimal
 from PIL import Image
+from PIL import ImageDraw
+from PIL import ImageFont
+from io import BytesIO
+from utils.helpers import format_money
 import json
 
 
 class BlackJack:
     GAME_TYPE = 'blackjack'
     _CARDS_BASE_DIRECTORY = os.path.join(os.path.dirname(__file__), 'images', 'cards')
+    _FONT_TTF_PATH = os.path.join(os.path.dirname(__file__), 'fonts', 'Smokum-Regular.ttf')
 
     def __init__(self):
         self.state = {
@@ -141,8 +146,8 @@ class BlackJack:
     def from_json(cls, state: str):
         return BlackJack().deserialize_from_json(state)
 
-    def create_house_image(self, hand: list[str], hide_second_card: bool = False) -> Image:
-        spacing_between_cards = 10
+    def create_hand_image(self, hand: list[str], hide_second_card: bool = False) -> Image:
+        spacing_between_cards = 20
         card_images: list[Image] = []
         for index, card_name in enumerate(hand):
             if index == 1 and hide_second_card and not self.state['game_ended']:
@@ -159,3 +164,48 @@ class BlackJack:
             canvas.paste(image, (current_x, 0), mask=image.convert('RGBA'))
             current_x += spacing_between_cards + card_width
         return canvas
+
+    def create_headline_image(self) -> Image:
+        spacing = 10
+        if self.state['game_ended']:
+            winner = self._get_winner()
+            if winner != 'push':
+                text = f'{winner} WON!'
+            else:
+                text = winner
+            text = text.upper()
+        else:
+            text = f"AMOUNT BET: {format_money(self.state['bet_amount'])[0:-3]}"
+
+        font = ImageFont.truetype(BlackJack._FONT_TTF_PATH, 200)
+        _, _, w, h = font.getbbox(text)
+        canvas = Image.new('RGBA',
+                           (w + (2 * spacing), h + (2 * spacing)))
+        drawable_canvas = ImageDraw.Draw(canvas)
+        drawable_canvas.text((spacing, spacing), text, font=font, fill='gold')
+        return canvas
+
+    def create_table_image(self) -> BytesIO:
+        spacing_between_decks = 100
+        width_min = 2500
+        headline_image = self.create_headline_image()
+        house_deck = self.create_hand_image(self.state['house_hand'], True)
+        player_deck = self.create_hand_image(self.state['player_hand'], False)
+
+        max_width = max(width_min, headline_image.width, player_deck.width, house_deck.width)
+        max_width += max_width // 2
+
+        canvas = Image.new('RGBA',
+                           (max_width,
+                            headline_image.height + spacing_between_decks + house_deck.height + spacing_between_decks + player_deck.height + spacing_between_decks),
+                           'forestgreen')
+        height_position = 0
+        for index, image_to_paste in enumerate([headline_image, house_deck, player_deck]):
+            centered_x = (max_width - image_to_paste.width) // 2
+            canvas.paste(image_to_paste, (centered_x, height_position), mask=image_to_paste)
+            height_position += image_to_paste.height + spacing_between_decks
+
+        canvas_bytes = BytesIO()
+        canvas.save(canvas_bytes, 'PNG')
+        canvas_bytes.seek(0)
+        return canvas_bytes
