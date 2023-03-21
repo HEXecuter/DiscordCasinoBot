@@ -39,13 +39,13 @@ class Roulette:
 
     def __init__(self):
         self.outside_mappings = {
-            'even': self.is_even,
-            'odd': self.is_odd,
-            'first dozen': self.is_first_dozen,
-            'second dozen': self.is_second_dozen,
-            'third dozen': self.is_third_dozen,
-            'low': self.is_low,
-            'high': self.is_high,
+            'even': self._is_even,
+            'odd': self._is_odd,
+            'first dozen': self._is_first_dozen,
+            'second dozen': self._is_second_dozen,
+            'third dozen': self._is_third_dozen,
+            'low': self._is_low,
+            'high': self._is_high,
         }
 
         self.outside_bets = {
@@ -110,7 +110,7 @@ class Roulette:
         state['payout'] = self.payout
         return json.dumps(state, default=str)
 
-    def deserialize_from_json(self, state: str):
+    def _deserialize_from_json(self, state: str):
         state: dict = json.loads(state)
 
         for outside_bet in state['outside_bets']:
@@ -131,7 +131,7 @@ class Roulette:
 
     @classmethod
     def from_json(cls, state: str):
-        return Roulette().deserialize_from_json(state)
+        return Roulette()._deserialize_from_json(state)
 
     def play(self):
         if not self.bet_placed:
@@ -153,7 +153,7 @@ class Roulette:
             self.bet_hits.append([self.tile_picked, bet_payout])
 
     @staticmethod
-    def is_even(tile: str) -> bool:
+    def _is_even(tile: str) -> bool:
         if tile == '0':
             return False
         if int(tile) % 2 == 0:
@@ -161,7 +161,7 @@ class Roulette:
         return False
 
     @staticmethod
-    def is_odd(tile: str) -> bool:
+    def _is_odd(tile: str) -> bool:
         if tile == '0':
             return False
         if int(tile) % 2 == 1:
@@ -169,7 +169,7 @@ class Roulette:
         return False
 
     @staticmethod
-    def is_first_dozen(tile: str) -> bool:
+    def _is_first_dozen(tile: str) -> bool:
         if tile == '0':
             return False
         num = int(tile)
@@ -178,7 +178,7 @@ class Roulette:
         return False
 
     @staticmethod
-    def is_second_dozen(tile: str) -> bool:
+    def _is_second_dozen(tile: str) -> bool:
         if tile == '0':
             return False
         num = int(tile)
@@ -187,7 +187,7 @@ class Roulette:
         return False
 
     @staticmethod
-    def is_third_dozen(tile: str) -> bool:
+    def _is_third_dozen(tile: str) -> bool:
         if tile == '0':
             return False
         num = int(tile)
@@ -196,7 +196,7 @@ class Roulette:
         return False
 
     @staticmethod
-    def is_low(tile: str) -> bool:
+    def _is_low(tile: str) -> bool:
         if tile == '0':
             return False
         num = int(tile)
@@ -205,7 +205,7 @@ class Roulette:
         return False
 
     @staticmethod
-    def is_high(tile: str) -> bool:
+    def _is_high(tile: str) -> bool:
         if tile == '0':
             return False
         num = int(tile)
@@ -214,7 +214,7 @@ class Roulette:
         return False
 
     @staticmethod
-    def create_chip(value: Decimal) -> Image:
+    def _create_chip(value: Decimal) -> Image:
         chip_image: Image = Image.open(Roulette._CHIP_PATH)
         chip_width = chip_image.width
         chip_height = chip_image.height
@@ -234,15 +234,15 @@ class Roulette:
         for outer_bet in self.outside_bets:
             if self.outside_bets[outer_bet]['amount'] != Decimal('0.00'):
                 bet_value = self.outside_bets[outer_bet]['amount']
-                chip_image = self.create_chip(bet_value)
+                chip_image = self._create_chip(bet_value)
                 chip_x = self._OUTSIDE_IMAGE_POSITIONS[outer_bet][0] - int(chip_image.width / 2)
                 chip_y = self._OUTSIDE_IMAGE_POSITIONS[outer_bet][1] - int(chip_image.height / 2)
                 roulette_table.paste(chip_image, (chip_x, chip_y), mask=chip_image.convert('RGBA'))
 
         for inside_bet in self.inside_bets['straight up']['picks']:
             bet_value = self.inside_bets['straight up']['picks'][inside_bet]['amount']
-            chip_image = self.create_chip(bet_value)
-            start_x, start_y = self.calculate_inside_bet_position(inside_bet)
+            chip_image = self._create_chip(bet_value)
+            start_x, start_y = self._calculate_inside_bet_position(inside_bet)
             chip_x = start_x - (chip_image.width // 2)
             chip_y = start_y - (chip_image.height // 2)
             roulette_table.paste(chip_image, (chip_x, chip_y), mask=chip_image.convert('RGBA'))
@@ -253,7 +253,7 @@ class Roulette:
         return roulette_table_bytes
 
     @staticmethod
-    def calculate_inside_bet_position(inside_bet: str):
+    def _calculate_inside_bet_position(inside_bet: str):
         if inside_bet == '0' or inside_bet == '1':
             return Roulette._INSIDE_IMAGE_POSITIONS[inside_bet]
 

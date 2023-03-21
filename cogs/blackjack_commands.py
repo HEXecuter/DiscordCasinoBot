@@ -115,7 +115,7 @@ class BlackjackCommands(commands.Cog):
     @staticmethod
     async def send_game_state(interaction: nextcord.Interaction, black_jack_game: BlackJack, user: User):
         if black_jack_game.state['game_ended']:
-            response = nextcord.Embed(title=f"Bet Placed!", color=0x00e1ff)
+            response = nextcord.Embed(title=f"Blackjack Game Ended!", color=0x00e1ff)
             response.add_field(name=f"Bet Placed",
                                value=f"```\n{format_money(black_jack_game.state['bet_amount'])}\n```",
                                inline=True)
