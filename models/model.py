@@ -13,10 +13,12 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
-import os
+from os import getenv
+from dotenv import load_dotenv
+from decimal import Decimal
 
-MONEY_DEFAULT: str = '1000'
-PET_PRICE_DEFAULT: str = '100000'
+MONEY_DEFAULT = Decimal('1000')
+PET_PRICE_DEFAULT = Decimal('100000')
 
 
 class Base(DeclarativeBase):
@@ -28,7 +30,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     discord_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     guild_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    money: Mapped[DECIMAL] = mapped_column(DECIMAL(precision=2), nullable=False, server_default=MONEY_DEFAULT)
+    money: Mapped[DECIMAL] = mapped_column(DECIMAL(scale=2, precision=30), nullable=False, default=MONEY_DEFAULT)
     job: Mapped['Job'] = relationship(back_populates='user')
     pet: Mapped['Pet'] = relationship(back_populates='user', foreign_keys='Pet.user_id')
     multipliers: Mapped[List['Multipliers']] = relationship(back_populates='user')
@@ -52,8 +54,8 @@ class Job(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
     user: Mapped['User'] = relationship(back_populates='job')
-    title: Mapped[str] = mapped_column(String(32, collation='NOCASE'), nullable=False)
-    company: Mapped[str] = mapped_column(String(32, collation='NOCASE'), nullable=False)
+    title: Mapped[str] = mapped_column(String(32), nullable=False)
+    company: Mapped[str] = mapped_column(String(32), nullable=False)
     # Default is an arbitrary date in the past so the user can immediately redeem paycheck
     paycheck_redeemed: Mapped[DATETIME] = mapped_column(DATETIME, nullable=False,
                                                         server_default='2020-01-01 00:00:00.000')
@@ -72,10 +74,10 @@ class Multipliers(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
     user: Mapped['User'] = relationship(back_populates='multipliers')
-    stat_multiplier: Mapped[DECIMAL] = mapped_column(DECIMAL(2), nullable=False)
+    stat_multiplier: Mapped[DECIMAL] = mapped_column(DECIMAL(scale=2, precision=30), nullable=False)
     amount_owned: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    degree_type: Mapped[str] = mapped_column(String(32, collation='NOCASE'), nullable=False)
-    field: Mapped[str] = mapped_column(String(32, collation='NOCASE'), nullable=False)
+    degree_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    field: Mapped[str] = mapped_column(String(32), nullable=False)
 
     def __str__(self):
         return f'Multiplier:\n' \
@@ -94,9 +96,9 @@ class Pet(Base):
     # Null current_owner means the pet is owned by the discord bot and not another user
     current_owner_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'), nullable=True)
     current_owner: Mapped['User'] = relationship(back_populates='pet', foreign_keys=current_owner_id)
-    name: Mapped[str] = mapped_column(String(32, collation='NOCASE'), nullable=False)
-    purchase_price: Mapped[DECIMAL] = mapped_column(DECIMAL(precision=2), nullable=False,
-                                                    server_default=PET_PRICE_DEFAULT)
+    name: Mapped[str] = mapped_column(String(32), nullable=False)
+    purchase_price: Mapped[DECIMAL] = mapped_column(DECIMAL(scale=2, precision=30), nullable=False,
+                                                    default=PET_PRICE_DEFAULT)
 
     def __str__(self):
         return f'Pet:\n' \
@@ -112,8 +114,8 @@ class Games(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
     user: Mapped['User'] = relationship(back_populates='games')
-    game_type: Mapped[str] = mapped_column(String(collation='NOCASE'), nullable=False)
-    game_state: Mapped[str] = mapped_column(String(), nullable=False)
+    game_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    game_state: Mapped[str] = mapped_column(String(2000), nullable=False)
 
     def __str__(self):
         return f'Games:\n' \
@@ -123,7 +125,9 @@ class Games(Base):
                f'\tgame_state: {self.game_state}\n'
 
 
-engine = create_engine('sqlite:///' + os.path.abspath(os.path.join(os.getcwd(), 'casino.sqlite3')))
+load_dotenv()
+engine = create_engine(f'mysql+mysqldb://{getenv("CASINO_DB_USER")}:{getenv("CASINO_DB_PASSWORD")}@'
+                       f'{getenv("CASINO_DB_HOST")}:{getenv("CASINO_DB_PORT")}/casino', pool_recycle=3600)
 Base.metadata.create_all(engine)
 
 if __name__ == '__main__':

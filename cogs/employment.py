@@ -18,7 +18,7 @@ from datetime import datetime
 from datetime import timedelta
 from decimal import Decimal
 
-PAYCHECK_INTERVAL: timedelta = timedelta(minutes=15)
+PAYCHECK_INTERVAL: timedelta = timedelta(minutes=10)
 BASE_PAY: Decimal = Decimal('100')
 
 
