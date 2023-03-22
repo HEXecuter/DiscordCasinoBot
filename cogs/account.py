@@ -42,6 +42,7 @@ class AccountManagement(commands.Cog):
             user: Union[User | None] = get_user(session, interaction.user.id, interaction.guild.id)
             user_not_exist: bool = user is None
             if user_not_exist:
+                pet_name = pet_name.capitalize()
                 self.create_user(session, interaction.user.id, interaction.guild.id, pet_name)
                 await self.send_welcome_message(interaction, pet_name)
                 session.commit()

@@ -60,8 +60,7 @@ class BlackJack:
 
         self.state['player_hand'].append(self._deal_card())
         if self._calculate_hand_value(self.state['player_hand']) >= 21 or not self.state['can_double_down']:
-            self.state['game_ended'] = True
-            self._close_game()
+            self.stand()
 
     def _hit_house(self):
         self.state['house_hand'].append(self._deal_card())
@@ -152,7 +151,7 @@ class BlackJack:
         card_width = card_images[0].width
         card_height = card_images[0].height
         canvas = Image.new('RGBA',
-                           # Calculate width of blank canvas with 10 px spacing on each edge and between all cards
+                           # Calculate width of blank canvas with spacing on each edge and between all cards
                            ((card_width * len(card_images)) + (spacing_between_cards * (len(card_images) + 1)),
                             card_height))
         current_x = spacing_between_cards

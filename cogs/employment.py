@@ -18,7 +18,7 @@ from datetime import datetime
 from datetime import timedelta
 from decimal import Decimal
 
-PAYCHECK_INTERVAL: timedelta = timedelta(hours=1)
+PAYCHECK_INTERVAL: timedelta = timedelta(minutes=15)
 BASE_PAY: Decimal = Decimal('100')
 
 
@@ -53,7 +53,7 @@ class Employment(commands.Cog):
     async def apply(self, interaction: nextcord.Interaction,
                     job_title: str = nextcord.SlashOption(min_length=5, max_length=32),
                     company_name: str = nextcord.SlashOption(min_length=5, max_length=32)):
-        """use this command to apply for your ✨first and only job✨
+        """Use this command to apply for your ✨first and only job✨
 
         Parameters
         _____________

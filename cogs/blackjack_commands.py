@@ -30,19 +30,29 @@ class BlackjackCommands(commands.Cog):
 
     @blackjack.subcommand()
     async def start(self, interaction: nextcord.Interaction, bet_amount: int = nextcord.SlashOption(min_value=1)):
+        """Use this command to start a blackjack game
+
+            Parameters
+            _____________
+            bet_amount:
+                The amount of money to bet for this game
+        """
         bet_amount = Decimal(bet_amount)
         await self.play_game(interaction, 'start', bet_amount)
 
     @blackjack.subcommand()
     async def double_down(self, interaction: nextcord.Interaction):
+        """Use this command to double your bet, and draw a final card before ending the game"""
         await self.play_game(interaction, 'double down')
 
     @blackjack.subcommand()
     async def stand(self, interaction: nextcord.Interaction):
+        """Use this command to end the game, the house will then draw cards and reveal their hand"""
         await self.play_game(interaction, 'stand')
 
     @blackjack.subcommand()
     async def hit(self, interaction: nextcord.Interaction):
+        """Use this command to draw another card"""
         await self.play_game(interaction, 'hit')
 
     async def play_game(self, interaction, action: str, bet_amount: Decimal = Decimal(0)):
